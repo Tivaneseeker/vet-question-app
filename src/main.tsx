@@ -1,20 +1,33 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import './gsap';
 import './styles.css';
 import { addWrongQuestion, clearQuestions, getQuestions, getWrongIds, removeWrongQuestion, saveQuestions } from './db';
 import { CHOICES, parseQuestionCsv } from './csv';
 import type { ChoiceKey, Question, View } from './types';
 
+const BASE_URL = import.meta.env.BASE_URL;
+
 function shuffle<T>(items: T[]): T[] {
   return [...items].sort(() => Math.random() - 0.5);
+}
+
+async function loadBundledQuestions(): Promise<{ count: number; skipped: number }> {
+  const current = await getQuestions();
+  if (current.length > 0) return { count: 0, skipped: 0 };
+
+  const response = await fetch(`${BASE_URL}questions.csv`, { cache: 'no-cache' });
+  if (!response.ok) return { count: 0, skipped: 0 };
+
+  const parsed = parseQuestionCsv(await response.text());
+  if (parsed.questions.length > 0) await saveQuestions(parsed.questions);
+  return { count: parsed.questions.length, skipped: parsed.errors.length };
 }
 
 function App() {
   const [view, setView] = useState<View>({ name: 'home' });
   const [questions, setQuestions] = useState<Question[]>([]);
   const [wrongIds, setWrongIds] = useState<string[]>([]);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState('正在准备题库...');
 
   async function refresh() {
     const [loadedQuestions, loadedWrongIds] = await Promise.all([getQuestions(), getWrongIds()]);
@@ -23,8 +36,18 @@ function App() {
   }
 
   useEffect(() => {
-    refresh();
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+    async function boot() {
+      try {
+        const seeded = await loadBundledQuestions();
+        await refresh();
+        setMessage(seeded.count > 0 ? `已自动导入 ${seeded.count} 题` : '');
+      } catch {
+        await refresh();
+        setMessage('');
+      }
+    }
+    boot();
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register(`${BASE_URL}sw.js`);
   }, []);
 
   const categories = useMemo(
@@ -33,18 +56,18 @@ function App() {
   );
 
   async function importFile(file: File) {
-    const text = await file.text();
-    const parsed = parseQuestionCsv(text);
+    const parsed = parseQuestionCsv(await file.text());
     if (parsed.questions.length > 0) await saveQuestions(parsed.questions);
     await refresh();
     setMessage(`导入 ${parsed.questions.length} 题${parsed.errors.length ? `，跳过 ${parsed.errors.length} 行` : ''}`);
   }
 
   async function resetAll() {
-    if (!window.confirm('确定清空本机题库和错题本吗？')) return;
+    if (!window.confirm('确定清空本机题库和错题本吗？清空后刷新页面会重新导入内置题库。')) return;
     await clearQuestions();
+    const seeded = await loadBundledQuestions();
     await refresh();
-    setMessage('已清空本机数据');
+    setMessage(`已重置，并重新导入 ${seeded.count} 题`);
   }
 
   return (
@@ -84,12 +107,12 @@ function App() {
       {view.name === 'import' && (
         <section className="panel">
           <h1>导入题库</h1>
-          <p className="muted">请选择字段为“分类,题干,A,B,C,D,E,正确答案,解析”的 CSV 文件。</p>
+          <p className="muted">应用已内置整理好的题库。你也可以继续导入字段为“分类,题干,A,B,C,D,E,正确答案,解析”的 CSV 文件。</p>
           <label className="filePicker">
             <input type="file" accept=".csv,text/csv" onChange={(event) => event.target.files?.[0] && importFile(event.target.files[0])} />
             选择 CSV 文件
           </label>
-          <button className="danger" onClick={resetAll}>清空本机数据</button>
+          <button className="danger" onClick={resetAll}>重置为内置题库</button>
           {message && <p className="notice">{message}</p>}
         </section>
       )}

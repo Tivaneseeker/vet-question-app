@@ -1,5 +1,13 @@
-const CACHE_NAME = 'vet-question-pwa-v1';
-const APP_SHELL = ['/', '/index.html', '/manifest.json', '/icons/icon-192.svg', '/icons/icon-512.svg'];
+const CACHE_NAME = 'vet-question-pwa-v2';
+const BASE_PATH = new URL(self.registration.scope).pathname;
+const APP_SHELL = [
+  BASE_PATH,
+  `${BASE_PATH}index.html`,
+  `${BASE_PATH}manifest.json`,
+  `${BASE_PATH}questions.csv`,
+  `${BASE_PATH}icons/icon-192.svg`,
+  `${BASE_PATH}icons/icon-512.svg`,
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
@@ -26,7 +34,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
           return response;
         })
-        .catch(() => caches.match('/index.html'));
+        .catch(() => caches.match(`${BASE_PATH}index.html`));
     }),
   );
 });
