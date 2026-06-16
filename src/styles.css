@@ -1,0 +1,172 @@
+:root {
+  color: #111827;
+  background: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button {
+  min-height: 48px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+  font-weight: 650;
+  text-align: left;
+  padding: 13px 15px;
+}
+
+button:disabled {
+  opacity: 0.55;
+}
+
+.app {
+  width: min(100%, 560px);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: env(safe-area-inset-top) 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 18px;
+}
+
+.topbar div {
+  display: grid;
+  gap: 2px;
+}
+
+.topbar span,
+.muted {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.ghost {
+  min-height: 36px;
+  padding: 8px 11px;
+  border-color: #e5e7eb;
+  color: #0f766e;
+}
+
+.home,
+.list,
+.options {
+  display: grid;
+  gap: 12px;
+}
+
+.home button {
+  min-height: 72px;
+  border-color: #cbd5e1;
+  font-size: 20px;
+}
+
+.panel,
+.quiz {
+  display: grid;
+  gap: 16px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.45;
+}
+
+p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.filePicker {
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  border: 1px dashed #0f766e;
+  border-radius: 8px;
+  background: #ecfeff;
+  color: #115e59;
+  font-weight: 700;
+}
+
+.filePicker input {
+  display: none;
+}
+
+.danger {
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.notice {
+  border-left: 4px solid #0f766e;
+  background: #ecfeff;
+  padding: 10px 12px;
+  color: #115e59;
+}
+
+.quizMeta {
+  display: flex;
+  justify-content: space-between;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.options button {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  align-items: start;
+  line-height: 1.55;
+}
+
+.options b {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #e2e8f0;
+}
+
+.options .selected {
+  border-color: #0f766e;
+  background: #ecfeff;
+}
+
+.primary {
+  width: 100%;
+  border-color: #0f766e;
+  background: #0f766e;
+  color: #ffffff;
+  text-align: center;
+}
+
+.result {
+  display: grid;
+  gap: 12px;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.result.ok {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.result.bad {
+  background: #fef2f2;
+  color: #991b1b;
+}
