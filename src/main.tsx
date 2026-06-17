@@ -6,7 +6,7 @@ import { CHOICES, parseQuestionCsv } from './csv';
 import type { ChoiceKey, Question, View } from './types';
 
 const BASE_URL = import.meta.env.BASE_URL;
-const BUNDLED_QUESTION_VERSION = '2026-06-17-direct-answer-source';
+const BUNDLED_QUESTION_VERSION = '2026-06-17-inline-answer-analysis';
 
 function shuffle<T>(items: T[]): T[] {
   return [...items].sort(() => Math.random() - 0.5);
@@ -231,6 +231,20 @@ function Quiz({
             <span>{question.options[key]}</span>
           </button>
         ))}
+      </div>
+      <div className="answerBox">
+        <div className="answerLine">
+          <strong>答案</strong>
+          <span>{explanation.standardAnswer || question.answer}</span>
+        </div>
+        <div className="answerLine">
+          <strong>出处</strong>
+          <span>{explanation.source || '未标注'}</span>
+        </div>
+        <div className="analysisBlock">
+          <strong>解析</strong>
+          <p>{explanation.detail || '暂无解析'}</p>
+        </div>
       </div>
       {!submitted ? (
         <button className="primary" disabled={!selected} onClick={submit}>提交</button>
