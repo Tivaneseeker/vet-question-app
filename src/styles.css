@@ -161,6 +161,31 @@ p {
   padding: 14px;
 }
 
+.answerMeta {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.answerMeta div {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.answerMeta dt {
+  font-weight: 700;
+}
+
+.answerMeta dd {
+  margin: 0;
+}
+
+.explanationText {
+  white-space: pre-line;
+}
+
 .result.ok {
   background: #ecfdf5;
   color: #065f46;

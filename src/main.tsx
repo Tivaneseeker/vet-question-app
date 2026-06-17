@@ -6,10 +6,22 @@ import { CHOICES, parseQuestionCsv } from './csv';
 import type { ChoiceKey, Question, View } from './types';
 
 const BASE_URL = import.meta.env.BASE_URL;
-const BUNDLED_QUESTION_VERSION = '2026-06-17-categories-sources';
+const BUNDLED_QUESTION_VERSION = '2026-06-17-direct-answer-source';
 
 function shuffle<T>(items: T[]): T[] {
   return [...items].sort(() => Math.random() - 0.5);
+}
+
+function parseExplanation(text: string): { standardAnswer: string; source: string; detail: string } {
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const standardAnswer = lines.find((line) => line.startsWith('标准答案：'))?.replace('标准答案：', '').trim() || '';
+  const source = lines.find((line) => line.startsWith('出处：'))?.replace('出处：', '').trim() || '';
+  const detail = lines
+    .filter((line) => !line.startsWith('标准答案：') && !line.startsWith('出处：'))
+    .join('\n')
+    .replace(/^解析：/, '')
+    .trim();
+  return { standardAnswer, source, detail };
 }
 
 async function loadBundledQuestions(): Promise<{ count: number; skipped: number }> {
@@ -175,6 +187,7 @@ function Quiz({
 
   const question = queue[index];
   const title = view.mode === 'wrong' ? '错题本' : view.mode === 'category' ? view.category || '分类刷题' : '随机刷题';
+  const explanation = question ? parseExplanation(question.explanation) : { standardAnswer: '', source: '', detail: '' };
 
   async function submit() {
     if (!question || !selected) return;
@@ -224,7 +237,17 @@ function Quiz({
       ) : (
         <div className={selected === question.answer ? 'result ok' : 'result bad'}>
           <strong>{selected === question.answer ? '回答正确' : `回答错误，正确答案：${question.answer}`}</strong>
-          <p>{question.explanation}</p>
+          <dl className="answerMeta">
+            <div>
+              <dt>标准答案</dt>
+              <dd>{explanation.standardAnswer || question.answer}</dd>
+            </div>
+            <div>
+              <dt>出处</dt>
+              <dd>{explanation.source || '未标注'}</dd>
+            </div>
+          </dl>
+          {explanation.detail && <p className="explanationText">{explanation.detail}</p>}
           <button className="primary" onClick={next}>下一题</button>
         </div>
       )}
