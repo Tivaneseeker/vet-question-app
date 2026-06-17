@@ -64,6 +64,47 @@ def split_blocks(text: str) -> list[str]:
     return [block for block in blocks if re.search(r"(?:^|\n)\s*[A-EＡ-Ｅ][\.、．]\s*", block)]
 
 
+def split_blocks_with_positions(text: str) -> list[tuple[int, str]]:
+    pattern = re.compile(r"(?m)^\s*(?:\d{1,4}|[一二三四五六七八九十百]+)[\.、．]\s*")
+    matches = list(pattern.finditer(text))
+    blocks: list[tuple[int, str]] = []
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        block = text[match.start() : end].strip()
+        if re.search(r"(?:^|\n)\s*[A-EＡ-Ｅ][\.、．]\s*", block):
+            blocks.append((match.start(), block))
+    return blocks
+
+
+def category_markers(text: str, fallback: str) -> list[tuple[int, str]]:
+    markers: list[tuple[int, str]] = [(0, fallback)]
+    normalized_pairs = [
+        ("基础科目", "基础科目"),
+        ("基础科⽬", "基础科目"),
+        ("预防科目", "预防科目"),
+        ("预防科⽬", "预防科目"),
+        ("临床科目", "临床科目"),
+        ("临床科⽬", "临床科目"),
+        ("综合科目", "综合科目"),
+        ("综合科⽬", "综合科目"),
+        ("综合应用科目", "综合科目"),
+        ("综合应⽤科⽬", "综合科目"),
+    ]
+    for raw, category in normalized_pairs:
+        for match in re.finditer(re.escape(raw), text):
+            markers.append((match.start(), category))
+    return sorted(markers, key=lambda item: item[0])
+
+
+def category_at(markers: list[tuple[int, str]], position: int) -> str:
+    current = markers[0][1]
+    for marker_position, category in markers:
+        if marker_position > position:
+            break
+        current = category
+    return current
+
+
 def normalize_choice_key(value: str) -> str:
     table = str.maketrans("ＡＢＣＤＥ", "ABCDE")
     return value.translate(table).upper()
@@ -90,7 +131,7 @@ def extract_explanation(block: str) -> str:
     return explanation.strip()
 
 
-def parse_block(block: str, category: str) -> dict[str, str] | None:
+def parse_block(block: str, category: str, source: str = "") -> dict[str, str] | None:
     block = normalize_text(block)
     marker = re.search(r"(?:^|\n)\s*([A-EＡ-Ｅ])[\.、．]\s*", block)
     if not marker:
@@ -119,6 +160,14 @@ def parse_block(block: str, category: str) -> dict[str, str] | None:
     if not stem or not options["A"] or not options["B"]:
         return None
 
+    explanation_parts = []
+    if answer:
+        explanation_parts.append(f"标准答案：{answer}")
+    if source:
+        explanation_parts.append(f"出处：{source}")
+    if explanation:
+        explanation_parts.append(f"解析：{explanation}")
+
     return {
         "分类": category,
         "题干": stem,
@@ -128,7 +177,7 @@ def parse_block(block: str, category: str) -> dict[str, str] | None:
         "D": options["D"],
         "E": options["E"],
         "正确答案": answer,
-        "解析": explanation,
+        "解析": "\n".join(explanation_parts),
     }
 
 
@@ -179,9 +228,10 @@ def main() -> int:
         except Exception as exc:
             print(f"跳过 {path}: {exc}", file=sys.stderr)
             continue
-        category = category_from_name(path)
-        for block in split_blocks(text):
-            row = parse_block(block, category)
+        fallback_category = category_from_name(path)
+        markers = category_markers(text, fallback_category)
+        for position, block in split_blocks_with_positions(text):
+            row = parse_block(block, category_at(markers, position), path.name)
             if not row:
                 continue
             if row["正确答案"]:
