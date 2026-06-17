@@ -6,6 +6,7 @@ import { CHOICES, parseQuestionCsv } from './csv';
 import type { ChoiceKey, Question, View } from './types';
 
 const BASE_URL = import.meta.env.BASE_URL;
+const BUNDLED_QUESTION_VERSION = '2026-06-17-categories-sources';
 
 function shuffle<T>(items: T[]): T[] {
   return [...items].sort(() => Math.random() - 0.5);
@@ -13,13 +14,18 @@ function shuffle<T>(items: T[]): T[] {
 
 async function loadBundledQuestions(): Promise<{ count: number; skipped: number }> {
   const current = await getQuestions();
-  if (current.length > 0) return { count: 0, skipped: 0 };
+  const storedVersion = window.localStorage.getItem('bundledQuestionVersion');
+  if (current.length > 0 && storedVersion === BUNDLED_QUESTION_VERSION) return { count: 0, skipped: 0 };
 
   const response = await fetch(`${BASE_URL}questions.csv`, { cache: 'no-cache' });
   if (!response.ok) return { count: 0, skipped: 0 };
 
   const parsed = parseQuestionCsv(await response.text());
-  if (parsed.questions.length > 0) await saveQuestions(parsed.questions);
+  if (parsed.questions.length > 0) {
+    await clearQuestions();
+    await saveQuestions(parsed.questions);
+    window.localStorage.setItem('bundledQuestionVersion', BUNDLED_QUESTION_VERSION);
+  }
   return { count: parsed.questions.length, skipped: parsed.errors.length };
 }
 
